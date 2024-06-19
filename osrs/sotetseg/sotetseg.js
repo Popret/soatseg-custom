@@ -1,9 +1,7 @@
 /* This code is pretty sloppy right now. Sorry for the mess. */
 
 function showAbout() {
-	alert("Feel free to message suggestions to me on discord at qhp#5615.\n\n" +
-		"- Special thanks to Ardames, De0, and Hato for advice on the game's mechanics.\n" +
-		"- Additional thanks to Deflne_Alive, LucidDream, SNIPERBDS, xZact, and the WeDoRaids discord for sharing mazes from which I could establish rules for maze generation.");
+	alert("Based on Soat maze trainer by qhp#5615 at https://devqhp.github.io/osrs/sotetseg/.\n\n");
 }
 
 function showInstructions() {
@@ -22,6 +20,7 @@ function showInstructions() {
 const tick_length  = 600;
 
 const maze_width   = 14;
+const combined_width = maze_width * 2 + 1;
 const maze_height  = 15;
 const max_x_change = 5;
 const path_turns   = 8;
@@ -39,7 +38,7 @@ var offset_user    = -offset_optimal;
 
 const color_mazeback = "#323232";
 const color_tilepath = "#961919";
-const color_tilenogo = "#C8C8C8";
+const color_tilenogo = "#686868";
 const color_tileplay = "#77DD77";
 const color_tilenext = "#C8C8C8";
 const color_tilesolv = "#6495ED";
@@ -49,11 +48,13 @@ const color_lineplay = "#6495ED";
 const color_circmove = "#FFFFFF";
 const color_circpass = "#008000";
 const color_circfail = "#DC143C";
+const color_highlite = "#FFFFFF";
 const solv_font      = "Arial";
 
 var canvas = document.getElementById("sotetseg-maze");
 var ctx = canvas.getContext("2d");
-canvas.width = tile_size * maze_width;
+
+canvas.width = tile_size * combined_width;
 canvas.height = tile_size * (maze_height); // need +1 for the extra row at the top to run off the maze, if desired.
 
 var imgTornado = new Image();
@@ -70,22 +71,16 @@ function resize() {
 	let viewport_height = window.innerHeight;
 	let viewport_width = window.innerWidth;
 
-	if (viewport_width / viewport_height < 0.77) {
-		if (viewport_width < 620) {
-			tile_size = (viewport_width - 20)/maze_width; // 30 is just buffer space
+		if (viewport_width < 1220) {
+			tile_size = (viewport_width - 20)/combined_width; // 30 is just buffer space
 		}
-	} else {
-		if (viewport_height < 800) {
-			tile_size = (viewport_height - 200)/maze_height; // 200 is buffer space for the buttons/text above/below the maze
-		}
-	}
 
 	tile_stroke  = tile_size/25;
 	solv_fontsize  = 15*(tile_size/40);
 	offset_optimal = solv_fontsize/2;
 	offset_user    = -offset_optimal;
 
-	canvas.width = tile_size * maze_width;
+	canvas.width = tile_size * combined_width;
 	canvas.height = tile_size * (maze_height); // need +1 for the extra row at the top to run off the maze, if desired.
 
 	drawState();
@@ -146,10 +141,15 @@ function drawTargetTile() {
 	ctx.stroke();
 }
 
-function drawMazeTile(x, y, color_tile) {
+function drawMazeTile(x, y, color_tile, color_indicator) {
 	let pos_x = tile_size * x;
 	let pos_y = tile_size * y;
-	ctx.fillStyle = color_tile;
+	ctx.beginPath(pos_x, pos_y, pos_x+tile_size, pos_y+tile_size);
+	ctx.arc(pos_x+tile_size/2, pos_y+tile_size/2, tile_size/3.4, 0, 2*Math.PI);
+	ctx.lineWidth = tile_stroke*1.2;
+	ctx.strokeStyle = color_tile;
+	ctx.stroke();
+	ctx.fillStyle = color_indicator ? color_indicator : color_tile;
 	ctx.fillRect(pos_x, pos_y, tile_size, tile_size);
 	ctx.fillStyle = color_mazeback;
 	ctx.fillRect(
@@ -158,17 +158,19 @@ function drawMazeTile(x, y, color_tile) {
 		tile_size - tile_stroke * 2,
 		tile_size - tile_stroke * 2
 	);
-	ctx.beginPath(pos_x, pos_y, pos_x+tile_size, pos_y+tile_size);
-	ctx.arc(pos_x+tile_size/2, pos_y+tile_size/2, tile_size/3.4, 0, 2*Math.PI);
-	ctx.lineWidth = tile_stroke*1.2;
-	ctx.strokeStyle = color_tile;
 	ctx.stroke();
 }
+
+function isHighlightedTile(x,y){
+return  (x%3===2 && ( (y == 2)|| (y == 5)|| (y == 9)|| (y == 12)))
+}
+
 
 function drawMaze() {
 	for (let x = 0; x < maze.length; x++) {
 		for (let y = 0; y < maze[x].length; y++) {
-			drawMazeTile(x, y, maze[x][y] ? color_tilepath : color_tilenogo);
+			drawMazeTile(x, y, color_tilenogo, isHighlightedTile(x,y) ? color_highlite : undefined);
+			drawMazeTile(x+maze_width+1, y, maze[x][y] ? color_tilepath : color_tilenogo, isHighlightedTile(x,y) ? color_highlite : undefined);
 		}
 	}
 }
